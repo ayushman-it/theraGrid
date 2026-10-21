@@ -11,7 +11,8 @@ The forms do not report success until a Google Apps Script endpoint has been con
 3. In the Apps Script editor, select `setupTheraGrid` and click **Run**. Review the requested Google Sheets and email permissions. The script creates a spreadsheet with `Appointments` and `Partners` tabs. Copy its URL from the execution log and keep the sheet private to the authorized care team.
 4. Choose **Deploy → New deployment → Web app**. Set **Execute as** to your account. Set access to **Anyone** so website visitors can submit without logging in. Deploy, authorize if prompted, and copy the URL ending in `/exec`.
 5. In `index.html`, set `const FORM_ENDPOINT` to the deployed URL ending in `/exec` (the current project endpoint is already configured). Upload the updated site files to your hosting provider.
-6. Send a real test appointment and a real partner enquiry from the deployed site. Confirm rows appear in the correct tabs and that the email notification arrives. Then remove test rows and any test message from the inbox.
+6. For later `Code.gs` changes, choose **Deploy → Manage deployments → Edit**, select **New version**, and deploy. Run `setupTheraGrid` again after this update so the new state and body-area column headers are added while existing rows remain in place.
+7. Send a real onboarding request, appointment request, and partner enquiry from the deployed site. Confirm rows appear in the correct tabs and that the email notification arrives. Then remove test rows and any test message from the inbox.
 
 The receiver validates required fields and consent, limits input lengths, rejects its hidden honeypot field, prevents duplicate reference replays, serializes sheet writes, and escapes spreadsheet formula prefixes. Keep the Sheet private. If the Apps Script deployment URL is changed, update `FORM_ENDPOINT` and redeploy the site. Google Apps Script quotas and availability apply.
 
@@ -29,7 +30,7 @@ For Hostinger shared hosting, upload `index.html` and the complete `assets/` fol
 
 ## Privacy and language
 
-The appointment form sends contact, service, scheduling, and consent fields to the configured Apps Script. The selected area and editable concern summary remain on the page only and are excluded from form submission and new spreadsheet rows. Marketing consent is optional and stored separately from required privacy consent. The two reserved spreadsheet columns remain blank to preserve existing column positions. Generic UTM campaign fields may be stored with appointment requests; no analytics library or user-level tracking is installed. The page includes English, Hindi, and Hinglish UI strings.
+The first-visit onboarding form sends a visitor's name, phone, selected therapy, body area, state, city, and privacy consent to the configured Apps Script. It does not request an email address. The regular appointment form continues to send its contact, service, scheduling, and consent fields. The body-map selection and editable concern summary stay on the page and are excluded from appointment submissions. Marketing consent is optional and stored separately from required privacy consent. The two reserved spreadsheet columns remain blank. Generic UTM campaign fields may be stored with appointment requests; no analytics library or user-level tracking is installed. The page includes English, Hindi, and Hinglish UI strings.
 
 ## Project files
 

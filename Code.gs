@@ -1,7 +1,7 @@
 /** TheraGrid static-site form receiver. Run setupTheraGrid() once, then deploy as a web app. */
 const NOTIFY_EMAIL = 'thecodemunk@gmail.com';
 const PROPERTY_KEY = 'THERAGRID_SHEET_ID';
-const APPOINTMENT_HEADERS = ['Reference','Timestamp','Full name','Mobile','Email','City','Service','Preferred date','Preferred time','Visit preference','Reserved (not collected)','Privacy consent','Marketing consent','UTM source','UTM medium','UTM campaign','Status','Reserved (not collected) 2'];
+const APPOINTMENT_HEADERS = ['Reference','Timestamp','Full name','Mobile','Email','City','Service','Preferred date','Preferred time','Visit preference','Reserved (not collected)','Privacy consent','Marketing consent','UTM source','UTM medium','UTM campaign','Status','Reserved (not collected) 2','State / Union Territory','Body area'];
 const PARTNER_HEADERS = ['Reference','Timestamp','Contact name','Mobile','Email','City','Organization','Provider type','Introduction','Privacy consent','Status'];
 
 function setupTheraGrid() {
@@ -56,7 +56,7 @@ function doPost(e) {
     const p = (e && e.parameter) || {};
     if (String(p.website || '').trim()) return page_('Unable to accept this request', 'Please check your form details and try again.', false);
     const type = String(p.formType || '');
-    if (type !== 'appointment' && type !== 'partner') throw new Error('Invalid form type.');
+    if (type !== 'appointment' && type !== 'onboarding' && type !== 'partner') throw new Error('Invalid form type.');
     const data = normalize_(p);
     validate_(type, data);
     const cache = CacheService.getScriptCache();
@@ -68,13 +68,13 @@ function doPost(e) {
       const sheetId = PropertiesService.getScriptProperties().getProperty(PROPERTY_KEY);
       if (!sheetId) throw new Error('The form receiver has not been configured yet.');
       const ss = SpreadsheetApp.openById(sheetId);
-      const sheet = ss.getSheetByName(type === 'appointment' ? 'Appointments' : 'Partners');
+      const sheet = ss.getSheetByName(type === 'partner' ? 'Partners' : 'Appointments');
       if (!sheet) throw new Error('The enquiry sheet is unavailable.');
-      const row = type === 'appointment' ? appointmentRow_(data) : partnerRow_(data);
+      const row = type === 'partner' ? partnerRow_(data) : appointmentRow_(data);
       sheet.appendRow(row);
       cache.put(duplicateKey, '1', 21600);
       try {
-        MailApp.sendEmail({to: NOTIFY_EMAIL, subject: 'New TheraGrid ' + (type === 'appointment' ? 'appointment' : 'partner') + ' enquiry', body: 'A new request has been saved to the TheraGrid Enquiries spreadsheet.\nReference: ' + data.reference + '\nType: ' + type + '\nPlease review it in the spreadsheet.'});
+        MailApp.sendEmail({to: NOTIFY_EMAIL, subject: 'New TheraGrid ' + (type === 'onboarding' ? 'onboarding' : type === 'appointment' ? 'appointment' : 'partner') + ' enquiry', body: 'A new request has been saved to the TheraGrid Enquiries spreadsheet.\nReference: ' + data.reference + '\nType: ' + type + '\nPlease review it in the spreadsheet.'});
       } catch (mailError) {
         console.error('Notification email failed for ' + data.reference + ': ' + mailError);
       }
@@ -92,19 +92,19 @@ function normalize_(p) {
   const take = k => String(p[k] || '').trim().slice(0, limits_[k] || 500);
   return {
     reference: take('reference') || Utilities.getUuid(), fullName: take('fullName'), mobile: take('mobile'),
-    email: take('email').toLowerCase(), city: take('city'), service: take('service'),
+    email: take('email').toLowerCase(), city: take('city'), state: take('state'), bodyArea: take('bodyArea'), service: take('service'),
     preferredDate: take('preferredDate'), preferredTime: take('preferredTime'), visitPreference: take('visitPreference'),
     privacyConsent: take('privacyConsent'), marketingConsent: take('marketingConsent') === 'yes' ? 'Yes' : 'No',
     utmSource: take('utm_source'), utmMedium: take('utm_medium'), utmCampaign: take('utm_campaign'),
     organization: take('organization'), providerType: take('providerType'), message: take('message')
   };
 }
-const limits_ = {reference:80,fullName:100,mobile:20,email:150,city:80,service:100,preferredDate:20,preferredTime:30,visitPreference:40,utm_source:120,utm_medium:120,utm_campaign:120,organization:150,providerType:80,message:500};
+const limits_ = {reference:80,fullName:100,mobile:20,email:150,city:80,state:100,bodyArea:80,service:100,preferredDate:20,preferredTime:30,visitPreference:40,utm_source:120,utm_medium:120,utm_campaign:120,organization:150,providerType:80,message:500};
 function validate_(type, d) {
-  const required = type === 'appointment' ? [d.fullName,d.mobile,d.email,d.city,d.service,d.preferredDate,d.preferredTime,d.visitPreference] : [d.fullName,d.mobile,d.email,d.city,d.organization,d.providerType];
+  const required = type === 'appointment' ? [d.fullName,d.mobile,d.email,d.city,d.service,d.preferredDate,d.preferredTime,d.visitPreference] : type === 'onboarding' ? [d.fullName,d.mobile,d.city,d.state,d.service,d.bodyArea] : [d.fullName,d.mobile,d.email,d.city,d.organization,d.providerType];
   if (required.some(v => !v)) throw new Error('Please complete all required fields.');
   if (d.privacyConsent !== 'yes') throw new Error('Please agree to the privacy notice before sending.');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) throw new Error('Please enter a valid email address.');
+  if (type !== 'onboarding' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) throw new Error('Please enter a valid email address.');
   if (!/^[+()\d .-]{7,20}$/.test(d.mobile)) throw new Error('Please enter a valid phone number.');
   if (type === 'appointment' && !/^\d{4}-\d{2}-\d{2}$/.test(d.preferredDate)) throw new Error('Please choose a valid preferred date.');
   if (type === 'appointment' && d.preferredDate < Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd')) throw new Error('Please choose today or a future date.');
@@ -115,7 +115,7 @@ function safeCell_(value) {
   return /^[=+@\-]/.test(text) ? "'" + text : text;
 }
 function appointmentRow_(d) {
-  return [d.reference,new Date(),d.fullName,d.mobile,d.email,d.city,d.service,d.preferredDate,d.preferredTime,d.visitPreference,'','Yes',d.marketingConsent,d.utmSource,d.utmMedium,d.utmCampaign,'New Enquiry',''].map(safeCell_);
+  return [d.reference,new Date(),d.fullName,d.mobile,d.email,d.city,d.service,d.preferredDate,d.preferredTime,d.visitPreference,'','Yes',d.marketingConsent,d.utmSource,d.utmMedium,d.utmCampaign,'New Enquiry','',d.state,d.bodyArea].map(safeCell_);
 }
 function partnerRow_(d) {
   return [d.reference,new Date(),d.fullName,d.mobile,d.email,d.city,d.organization,d.providerType,d.message,'Yes','New Enquiry'].map(safeCell_);
