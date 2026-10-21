@@ -1,0 +1,11 @@
+Model: human-body.glb
+Source asset: BodyParts3D v3.0, anatomical skin GLB
+Source repository: https://github.com/yamz8/human-body-simulator (public/models/anatomy-skin.glb)
+Original project / attribution: BodyParts3D, © The Database Center for Life Science
+Original DOI: https://doi.org/10.18908/lsdba.nbdc00837-000
+License: Creative Commons Attribution-ShareAlike 2.1 Japan (CC BY-SA 2.1 JP)
+License text: https://creativecommons.org/licenses/by-sa/2.1/jp/legalcode
+Changes: redistributed as a local GLB file; normalized source JSON; added a natural skin PBR material. The original geometry and Draco-compressed binary payload are unchanged.
+Share-alike notice: modifications or adaptations of this model must be distributed under CC BY-SA 2.1 Japan or a compatible license, with attribution and license link retained.
+
+Legacy unused asset retained in this workspace: assets/human.glb (Quaternius Universal Base Characters, prepared by UMRAM-Bilkent), licensed CC0 1.0 Universal. It is not referenced by index.html. Sources: https://github.com/UMRAM-Bilkent/supine-human-model and https://quaternius.com/packs/universalbasecharacters.html
